@@ -11,7 +11,6 @@ from rest_framework.response import Response
 from .models import Document
 from store.serializers import DocumentSerializer
 
-CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
@@ -25,11 +24,13 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
 
     def create(self, request, **kwargs):
+        # serialize the received data
         serialized = self.serializer_class(data=request.data)
 
-        if serialized.is_valid():
+        if serialized.is_valid():  # ensuring the data sent isn't malformed
             serialized.save()
-            obj = Document.objects.all().latest('id')
+            obj = Document.objects.all().latest('id')  # not a clean solution, but it works
+            # caching the new document.
             cache.set('doc:'.format(obj.id), {"id": obj.id, "message": obj.message}, 30)
 
             return Response({"status": "Document created"}, status=status.HTTP_201_CREATED)
@@ -40,8 +41,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, *args, **kwargs):
-        print(kwargs['id'])
-        if 'doc:'.format(kwargs['id']) in cache:
+        if 'doc:'.format(kwargs['id']) in cache:  # ensuring the requested document is still cached
             documents = cache.get('doc:'.format(kwargs['id']))
             return Response({
                 "document": documents
