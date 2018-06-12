@@ -12,7 +12,6 @@ from .models import Document
 from store.serializers import DocumentSerializer
 
 
-
 class DocumentViewSet(viewsets.ModelViewSet):
     """
     message -- The message in the document
@@ -42,10 +41,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         if 'doc:'.format(kwargs['id']) in cache:  # ensuring the requested document is still cached
-            documents = cache.get('doc:'.format(kwargs['id']))
-            return Response({
-                "document": documents
-            }, status=status.HTTP_200_OK)
+            document = cache.get('doc:'.format(kwargs['id']))
+            return Response(document, status=status.HTTP_200_OK)
+        elif Document.objects.filter(id=kwargs['id']).exists():
+            document = Document.objects.get(id=kwargs['id'])
+            serialized = self.serializer_class(document)
+            return Response(serialized.data, status=status.HTTP_200_OK)
 
         return Response({
             "status": "Failed Request",

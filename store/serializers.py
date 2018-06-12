@@ -6,5 +6,5 @@ from .models import Document
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ("message",)
+        fields = ('id', 'message',)
         read_only_fields = ('id',)
